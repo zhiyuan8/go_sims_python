@@ -28,11 +28,11 @@ int main(int argc, char* argv[])
         cout << "The trail folder will be generated and all intermediate results will be output" << "\n";
         decision.matrix=true;
     }
+
+    //path_in = "/home/zhiyuan/Desktop/go_sim_for_python/simulation_output/case_heart-effect_0.5";
+    //input.seed = 100;
     path_out = path_in + "/summary";
     path_trials_out = path_in + "/trials";
-
-    /*path_in = "/home/zhiyuan/Desktop/go_sim_for_python/simulation_output/case_heart-effect_0.5";
-    input.seed = 100;*/
 
     // 1. read in data, intialize all vectors
     startTime = clock(); // begin documenting time
@@ -44,9 +44,11 @@ int main(int argc, char* argv[])
         return 0;
     }
     create_ID(json, ID, input.col, json_vector, json_length, false);// build the map. If true, then show me all ID
-    Initialize_all(readin, input, pValue_ttest, sims_test_statistic, geometric_p_value, sims_result, sims_result2, geo_result, geo_result2, json_vector);// initialize all vectors
+    Initialize_all(readin, input, pValue_ttest, statistic_ttest, sims_test_statistic, geometric_p_value, sims_result, sims_result2, geo_result, geo_result2, json_vector);// initialize all vectors
     read_in_json3(path_in, self_contained, competitive, json, ID, input, json_vector, json_length, readin);// get self_contained and competitive non-null
     create_output(decision,path_out,path_trials_out); // create two folders, and create first line for files in summary folder
+
+    //decision.matrix=true; // I define by myself
 
     // 2. Initialize all dynamic arrays
     sims_bonf.FDP = new double [readin.n_regimes*readin.n_reps];
@@ -63,6 +65,13 @@ int main(int argc, char* argv[])
     hyper_BH.n_rejection = new int [readin.n_regimes*readin.n_reps];
     data1 = new double [readin.max_n];
     data2 = new double [readin.max_n];// normal random variable 1D array for one row of control sample
+    data1_temp = new double*[ readin.max_n ]; // normal random variable matrix for control sample, for output file
+    data2_temp = new double*[ readin.max_n ];
+    for (int i=0; i<int (readin.max_n); i++)
+        {
+            data1_temp[i] = new double [input.col]; // normal random variable matrix size = (readin.max_n * input.col)
+            data2_temp[i] = new double [input.col]; // normal random variable matrix size = (readin.max_n * input.col)
+        }
     sims_bonf_node = new double *[json_vector];
     sims_BH_node = new double *[json_vector];// node specific power for all regimes
     hyper_bonf_node = new double *[json_vector];
@@ -88,22 +97,31 @@ int main(int argc, char* argv[])
         {
             position++;
             input.seed = input.seed + (j + 1) * 100; // use different seed in each loop
-            start = std::chrono::high_resolution_clock::now();
-            generateN(data1,data2,input,pValue_ttest); // generate a column of p value and do t-test to get p value
-            finish = std::chrono::high_resolution_clock::now();
-            elapsed = finish - start;
-            generate_time = generate_time + elapsed.count();
 
-            // create "trialN" folder if required
+            // create "trialN" folder
             string command = "mkdir -p " + path_trials_out + "/trail_" +to_string(position) ; // path to "trialN" folder
             string path_trials_out_N = path_trials_out + "/trail_" +to_string(position);
             stringstream ss;
             ss << fixed << setprecision(2) << input.alpha; //print to string with specific precision
             string alpha_string = ss.str(); // get the '0.1' used in json file names
+            system(command.c_str()); // generate "trialN" folder
+
+            // generate normal random variables and do t-tests
+            start = std::chrono::high_resolution_clock::now();
             if (decision.matrix)
             {
-                system(command.c_str()); // generate "trialN" folder
+                generateY(data1, data2, data1_temp, data2_temp, input, pValue_ttest, statistic_ttest); // generate a matrix of p value and do t-test to get p value
+                write_out_python(pValue_ttest,statistic_ttest, path_trials_out_N);
+                write_out_matrix(data1_temp, data2_temp, input.row_reject, input.col, j+1, path_trials_out_N); // output .npy, I have not written it yet
             }
+            else
+            {
+                generateN(data1,data2,input,pValue_ttest, statistic_ttest); // generate a column of p value and do t-test to get p value
+		write_out_python(pValue_ttest,statistic_ttest, path_trials_out_N);
+            }
+            finish = std::chrono::high_resolution_clock::now();
+            elapsed = finish - start;
+            generate_time = generate_time + elapsed.count();
 
             // hypergeometric test for the competitive null
             if (decision.hyper) // do hypergeometric tests
@@ -121,14 +139,10 @@ int main(int argc, char* argv[])
                      mul_bonf2(geo_result2, geometric_p_value, (input.alpha/json_vector), hyper_bonf_node, i, 0);// Bonferroni multiple testing. if 1, show result.
                      confusion(hyper_bonf, geo_result2, competitive, input.row_reject, j, position, 0);// get FDP & beta of hypergeometric test.  if 1, show result.
                 }
-                if (decision.matrix)
-                {
-                   write_out_trails(geo_result, geo_result2, geometric_p_value, decision, path_trials_out_N, alpha_string); //write out all details in 'trials' folder if required
-                }
-
                 finish = std::chrono::high_resolution_clock::now();
                 elapsed = finish - start;
                 hyper_time = hyper_time + elapsed.count();
+                write_out_trails(geo_result, geo_result2, geometric_p_value, decision, path_trials_out_N, alpha_string); //write out all details in 'trials' folder
             }
 
             // sims test for the self-contained null
@@ -146,21 +160,32 @@ int main(int argc, char* argv[])
                     mul_bonf2(sims_result2, sims_test_statistic, (input.alpha/json_vector), sims_bonf_node, i, 0);// Bonferroni multiple testing. if 1, show result.
                     confusion(sims_bonf, sims_result2, self_contained, input.row_reject, j, position, 0);// get FDP & beta of hypergeometric test.  if 1, show result.
                 }
-                if (decision.matrix)
-                {
-                    write_out_trails(sims_result, sims_result2, sims_test_statistic, decision, path_trials_out_N,alpha_string); //write out all details in 'trials' folder if required
-                }
                 finish = std::chrono::high_resolution_clock::now();
                 elapsed = finish - start;
                 sims_time = sims_time + elapsed.count();
+                write_out_trails(sims_result, sims_result2, sims_test_statistic, decision, path_trials_out_N,alpha_string); //write out all details in 'trials' folder
             }
+            finish_trial_save(path_trials_out_N);//write a blank file which indicates one trial is finished
         }
         //show averaged result for one regime
-        show_final_result(sims_bonf, readin.n_reps, position,"sims test + bonferroni adjustment");
-        show_final_result(sims_BH, readin.n_reps, position, "sims test + BH adjustment");
-        show_final_result(hyper_bonf, readin.n_reps, position,"hypergeometric test + bonferroni adjustment");
-        show_final_result(hyper_BH, readin.n_reps, position,"hypergeometric test + BH adjustment");
+        if (decision.BH && decision.hyper)
+        {
+            show_final_result(hyper_BH, readin.n_reps, position,"hypergeometric test + BH adjustment");
+        }
+        if (decision.bonf && decision.hyper)
+        {
+            show_final_result(hyper_bonf, readin.n_reps, position,"hypergeometric test + bonferroni adjustment");
+        }
+        if (decision.BH && decision.sims)
+        {
+            show_final_result(sims_BH, readin.n_reps, position, "sims test + BH adjustment");
+        }
+        if (decision.bonf && decision.sims)
+        {
+            show_final_result(sims_bonf, readin.n_reps, position,"sims test + bonferroni adjustment");
+        }
     }
+
     //write out power, FDP and node-specific power
     write_out_results(sims_bonf,sims_BH, hyper_bonf, hyper_BH, sims_bonf_node, sims_BH_node, hyper_bonf_node, hyper_BH_node,
                       json_vector,readin, position, path_out, decision);
@@ -172,12 +197,19 @@ int main(int argc, char* argv[])
     cout << "sims_time : " << sims_time << endl;
     cout << "Totle Time : " << (double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
 
+    for (int i=0; i<readin.max_n; i++)
+    {
+        delete [] data1_temp[i];
+        delete [] data2_temp[i];
+    }
+    delete [] data1_temp;
+    delete [] data2_temp;
     for (int i=0; i<json_vector; i++)
     {
         delete [] sims_BH_node[i];
         delete [] sims_bonf_node[i];
         delete [] hyper_BH_node[i];
-        delete []hyper_bonf_node[i];
+        delete [] hyper_bonf_node[i];
     }
     delete [] sims_BH_node;
     delete [] sims_bonf_node;

@@ -15,7 +15,7 @@
 using namespace std;
 namespace pt = boost::property_tree;
 
-void Initialize_all(READIN &readin, INPUT &input, vector <double> &ttest, vector <double> &sims_test, vector <double> &geometric_p,
+void Initialize_all(READIN &readin, INPUT &input, vector <double> &ttest, vector <double> &statistic_ttest, vector <double> &sims_test, vector <double> &geometric_p,
                     vector <bool> &sims_result, vector <bool> &sims_result2, vector <bool> &geo_result, vector <bool> &geo_result2, int col2)
 {
     input.mu1 = readin.eff_size;
@@ -26,6 +26,7 @@ void Initialize_all(READIN &readin, INPUT &input, vector <double> &ttest, vector
     else
         input.a = 1;  // use area in left tail as p - value
     ttest.resize(input.col);
+    statistic_ttest.resize(input.col);
     sims_test.resize(col2);
     sims_result.resize(col2);
     sims_result2.resize(col2);
@@ -155,7 +156,7 @@ void show_final_result(OUTPUT output, int n_reps, int position, string str)
         FDR = output.FDP[i] + FDR;
         mean_beta = output.power[i] + mean_beta;
     }
-    cout << str << "FDP= " << FDR/n_reps << " power= " << mean_beta/n_reps << endl;
+    cout << str << "  FDP= " << FDR/n_reps << " power= " << mean_beta/n_reps << endl;
 }
 
 void write_out_node_specific_power(double **matrix, string path, int json_vector, READIN readin)
@@ -180,31 +181,45 @@ void write_out_node_specific_power(double **matrix, string path, int json_vector
     c_out.close(); //close the file
 }
 
-void write_out_json_bool (vector<bool> output, string path)
+void write_out_json_bool (vector<bool> output, string path, string test, string adjust, string q)
 {
     pt::ptree pt;
+    pt::ptree temp;
     int length=output.size();
+    int k=0; // temp # of rejections
     for (int i=0; i<length; i++)
     {
         if (output[i])
         {
             pt::ptree cell;
             cell.put_value(i);
-            pt.push_back ( make_pair("", cell) );
+            temp.push_back ( make_pair("", cell) );
+            k++;
         }
     }
+
+    pt.put ("test", test); // get "test"
+    pt.put ("adjust", adjust); // get "num_pvals"
+    pt.put ("q_threshold", q); // get "q_threshold"
+    pt.put("num_rejections",k);//get "num_rejections"
+    pt.add_child("rejections", temp);
     pt::write_json(path, pt);
 }
 
-void write_out_json_double (vector<double> output, string path)
+void write_out_json_double (vector<double> output, string path, string name)
 {
     pt::ptree pt;
+    pt::ptree temp;
     int length=output.size();
+
+    pt.put ("test", name); // get "test"
+    //pt.put ("num_pvals", length); // get "num_pvals"
     for (int i=0; i<length; i++)
     {
         pt::ptree cell;
         cell.put_value(output[i]);
-        pt.push_back ( make_pair("", cell) );
+        temp.push_back ( make_pair("", cell));
     }
+    pt.add_child("pvals",temp); // get "pvals" vector
     pt::write_json(path, pt);
 }

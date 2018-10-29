@@ -9,6 +9,7 @@
 
 #include "array_size.h" //refer to constant
 #include "utils.h" // use set union
+#include"cnpy.h"
 
 using namespace std;
 namespace pt = boost::property_tree;
@@ -208,36 +209,75 @@ void create_output(DECISION decision, string path_out, string path_out_trials)
     }
 }
 
-void write_out_trails(vector <bool> result, vector <bool> result2, vector <double> p, DECISION decision, string path, string alpha)
+void write_out_python(vector <double> pValue_ttest,vector <double> statistic_ttest, string path)
+{
+    path = path + "/gene_stats.npy";
+    long unsigned int length = pValue_ttest.size();
+    cnpy::npy_save(path,&statistic_ttest[0],{length},"w");
+    //cnpy::npy_save(path,&pValue_ttest[0],{length},"a");
+}
+
+void write_out_matrix(double ** data1_temp, double ** data2_temp, int row, int col, int rep, string path)
+{
+    ofstream c_out;
+    string s = to_string(row);
+    string X_path = path +"/control_n_" + s + ".csv";
+    string Y_path = path +"/case_n_" + s + ".csv";
+    c_out.open(X_path.c_str(), ios::app);
+    c_out<<"experiment= "<< rep << endl;
+    for (int j=0; j<row; j++)
+    {
+        for (int k=0; k<col; k++)
+        {
+            c_out << data1_temp [j][k] <<',';
+        }
+        c_out<<endl;
+    }
+    c_out.close(); //close the file
+    c_out.open(Y_path.c_str(), ios::app);
+    c_out<<"experiment= "<< rep << endl;
+    for (int j=0; j<row; j++)
+    {
+        for (int k=0; k<col; k++)
+        {
+            c_out << data2_temp [j][k] <<',';
+        }
+        c_out<<endl;
+    }
+    c_out.close(); //close the file
+}
+
+void write_out_trails(vector <bool> result, vector <bool> result2, vector <double> p,
+                      DECISION decision, string path, string alpha)
 {
     if (decision.sims)
     {
         string value_path = path +"/node_pvals_simes.json";
-        write_out_json_double(p,value_path);
+        write_out_json_double(p,value_path,"sims");
         if (decision.bonf)
         {
             string bonf_path = path +"/node_rej_"+alpha+"_simes_Bonferroni.json";
-            write_out_json_bool(result,bonf_path);
+            write_out_json_bool(result,bonf_path,"sims","Bonferroni",alpha);
         }
         if (decision.BH)
         {
             string BH_path = path +"/node_rej_"+alpha+"_simes_BH.json";
-            write_out_json_bool(result2,BH_path);
+            write_out_json_bool(result2,BH_path,"sims","BH",alpha);
         }
     }
     if (decision.hyper)
     {
         string value_path = path +"/node_pvals_hypergeometric.ga.json";
-        write_out_json_double(p,value_path);
+        write_out_json_double(p,value_path,"hypergeometric.ga");
         if (decision.bonf)
         {
             string bonf_path = path +"/node_rej_"+alpha+"_hypergeometric.ga_Bonferroni.json";
-            write_out_json_bool(result,bonf_path);
+            write_out_json_bool(result,bonf_path,"hypergeometric.ga","Bonferroni",alpha);
         }
         if (decision.BH)
         {
             string BH_path = path +"/node_rej_"+alpha+"_hypergeometric.ga_BH.json";
-            write_out_json_bool(result2,BH_path);
+            write_out_json_bool(result2,BH_path,"hypergeometric.ga","BH",alpha);
         }
     }
 } 
@@ -305,4 +345,19 @@ void write_out_results(OUTPUT sims_bonf, OUTPUT sims_BH, OUTPUT hyper_bonf, OUTP
         string hyper_BH_node_path = path_out + "/node_hypergeometric.ga_BH.csv";
         write_out_node_specific_power(hyper_BH_node,hyper_BH_node_path,json_vector,readin);
     }
+}
+
+void finish_trial_save(string path)
+{
+    string path1 = path + "/_COMPLETE_GENESTAT";
+    ofstream c_out;
+    c_out.open(path1.c_str());
+    c_out << " ";
+    c_out.close(); //finish write out a blank file
+
+    string path2 = path + "/_COMPLETE_NODESTAT";
+    ofstream c_out2;
+    c_out2.open(path2.c_str());
+    c_out2 << " ";
+    c_out2.close(); //finish write out a blank file
 }

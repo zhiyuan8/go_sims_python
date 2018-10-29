@@ -3,7 +3,8 @@
 
 #include "array_size.h"
 
-double t_test(double temp_1[], double temp_2[], int &Sn1, int &Sn2);
+void t_test(double temp_1[], double temp_2[], int &Sn1, int &Sn2, int index,
+              vector <double> &pValue_ttest, vector <double> &statistic_ttest);
 void mul_bonf(vector <double> pValue_ttest, vector <int> &Bonf_reject, INPUT input, map <int, int> ID, int dec);
 void gl_geometric(vector<double> &result, vector<int> D, vector<vector <int> > json_data, int N, int dec);
 void gl_sims(vector <double> pValue_ttest, vector <double> &sims_result, vector< vector<int>> json_data, map <int, int> ID, int dec);

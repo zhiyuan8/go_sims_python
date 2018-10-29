@@ -16,6 +16,7 @@ vector<vector <int> > json;
 vector <bool> self_contained; //it is a 0/1 vector, when it is 1, the corresponding vector has at least one rejection
 vector <bool> competitive; //it is a 0/1 vector, when it is 1, the corresponding vector has at least one rejection
 vector <double> pValue_ttest; // it has the same length as the total columns of pValue
+vector <double> statistic_ttest; // it has the same length as the total columns of pValue
 
 // all variables used in self-contained/Sims
 vector <double> sims_test_statistic;
@@ -49,6 +50,8 @@ OUTPUT hyper_BH;
 // definition for all dymanic arrays
 double *data1;
 double *data2;
+double **data1_temp;
+double **data2_temp;
 double **sims_bonf_node;
 double **sims_BH_node;
 double **hyper_bonf_node;

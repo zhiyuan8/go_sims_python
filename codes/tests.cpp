@@ -10,7 +10,8 @@
 #include "utils.h"
 using namespace std;
 
-double t_test(double temp_1[], double temp_2[], int &Sn1, int &Sn2)
+void t_test(double temp_1[], double temp_2[], int &Sn1, int &Sn2, int index,
+              vector <double> &pValue_ttest, vector <double> &statistic_ttest)
 {
     // declare parameters used in 2-sample t-test
     double Sm1;       // Sm1 = Sample 1 Mean.
@@ -18,7 +19,6 @@ double t_test(double temp_1[], double temp_2[], int &Sn1, int &Sn2)
     double Sm2;       // Sm2 = Sample 2 Mean.
     double Sd2;       // Sd2 = Sample 2 Standard Deviation.
     double v;         // Degrees of freedom.
-    double t_stat;    // t-statistic
     double t1;
     double t2;
     // All parameters used in 2-sample t-test
@@ -35,9 +35,9 @@ double t_test(double temp_1[], double temp_2[], int &Sn1, int &Sn2)
     t2 *= t2;
     t2 /= (Sn2 - 1);
     v /= (t1 + t2);
-    t_stat = (Sm1 - Sm2) / sqrt(Sd1 * Sd1 / Sn1 + Sd2 * Sd2 / Sn2);// t-statistic
+    statistic_ttest[index] = (Sm1 - Sm2) / sqrt(Sd1 * Sd1 / Sn1 + Sd2 * Sd2 / Sn2);// t-statistic
     boost::math::students_t dist(v);
-    return ( 2*cdf(complement(dist, fabs(t_stat))) );// return two-sided p value
+    pValue_ttest[index] =  2*cdf(complement(dist, fabs(statistic_ttest[index])));// return two-sided p value
 }
 
 void mul_bonf(vector <double> pValue_ttest, vector <int> &Bonf_reject, INPUT input, map <int, int> ID, int dec)
