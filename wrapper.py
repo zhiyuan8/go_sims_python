@@ -10,6 +10,6 @@ import os
 #	boost_path: boost library installation path, made visible to the system
 
 def go_dag(filepath, seed=100, output =0, boost_path='/home/zhiyuan/Downloads/boost_1_68_0'):
-	os.system("cd codes; g++ -I {} main.cpp generate_data.cpp io.cpp tests.cpp utils.cpp -o GO_DAG -std=c++11; cd -".format(boost_path))
+	os.system("cd codes; g++ -I {} main.cpp generate_data.cpp io.cpp tests.cpp utils.cpp cnpy.cpp -o GO_DAG -std=c++11; cd -".format(boost_path))
 	os.system("./codes/GO_DAG {} {} {}".format(filepath, seed, output))
 go_dag('./simulation_output/case_heart-effect_0.5')
