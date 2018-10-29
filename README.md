@@ -27,7 +27,7 @@ If boost library is not found, and you don't have the root access, you can find 
 
 If you are running it on your PC, then use ```cd``` to locate at the place where you will store the codes. Download the codes on github. 
 ```
-git clone --https://github.com/zhiyuan8/go_sim_python.git
+git clone https://github.com/zhiyuan8/go_sim_python.git
 ```
 If you are running it on a remote server, download the codes on github.
 ```
