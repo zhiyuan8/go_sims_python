@@ -6,11 +6,6 @@ Self-contained and competitive tests on simulated data. The two tests are used t
 g++ >= 4.2.1. (double check it! it is said g++ contains C++11 lib)
 https://stackoverflow.com/questions/7482026/can-i-use-the-latest-features-of-c11-in-xcode-4-or-osx-lion
 
-The following codes help to check version
-```
-g++ --version
-```
-
 ### Before Installation
 
 Boost library is used in normal random variable generation and chi-square quantile calculation. In terminal, firstly check if there exists boost library. Run the following codes:
