@@ -1,4 +1,4 @@
-﻿# go_sim
+﻿# go_sim_
 The codes is written by C++ but is wrapped by python.
 Self-contained and competitive tests on simulated data. The two tests are used to detect non-null gene.
 
